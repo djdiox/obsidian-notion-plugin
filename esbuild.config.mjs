@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules'
+import babel from 'esbuild-plugin-babel';
 
 const banner =
 `/*
@@ -16,10 +17,13 @@ esbuild.build({
 		js: banner,
 	},
 	entryPoints: ['main.ts'],
+    plugins: [babel()],
 	bundle: true,
 	external: [
 		'obsidian',
 		'electron',
+		'@notionhq/client',
+		'dotenv',
 		'@codemirror/autocomplete',
 		'@codemirror/closebrackets',
 		'@codemirror/collab',
