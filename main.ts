@@ -1,13 +1,26 @@
 import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
+// import { Client } from "@notionhq/client";
 
+import {config} from "dotenv";
+
+config();
 // Remember to rename these classes and interfaces!
 
+interface NotionDatabase {
+		id: string;
+		link: string;
+}
 interface MyPluginSettings {
-	mySetting: string;
+	notionToken: string;
+	database: NotionDatabase
 }
 
 const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default'
+	notionToken: process.env.NOTION_TOKEN || '',
+	database: {
+		link:  process.env.NOTION_DATABASE_LINK || '',
+		id: ''
+	}
 }
 
 export default class MyPlugin extends Plugin {
@@ -17,7 +30,7 @@ export default class MyPlugin extends Plugin {
 		await this.loadSettings();
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Sample Plugin', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Notion Integration Plugin', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
 			new Notice('This is a notice!');
 		});
@@ -26,14 +39,21 @@ export default class MyPlugin extends Plugin {
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status Bar Text');
-
+		statusBarItemEl.setText('Loading Databases');
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'open-sample-modal-simple',
 			name: 'Open sample modal (simple)',
 			callback: () => {
-				new SampleModal(this.app).open();
+				new NotionDatabases(this.app).open();
+			}
+		});
+		// This adds a simple command that can be triggered anywhere
+		this.addCommand({
+			id: 'open-sample-modal-simple',
+			name: 'Open sample modal (simple)',
+			callback: () => {
+				new NotionDatabases(this.app).open();
 			}
 		});
 		// This adds an editor command that can perform some operation on the current editor instance
@@ -56,7 +76,7 @@ export default class MyPlugin extends Plugin {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
 					if (!checking) {
-						new SampleModal(this.app).open();
+						new NotionDatabases(this.app).open();
 					}
 
 					// This command will only show up in Command Palette when the check function returns true
@@ -79,7 +99,7 @@ export default class MyPlugin extends Plugin {
 	}
 
 	onunload() {
-
+		console.log('unloading plugin')
 	}
 
 	async loadSettings() {
@@ -91,14 +111,17 @@ export default class MyPlugin extends Plugin {
 	}
 }
 
-class SampleModal extends Modal {
+class NotionDatabases extends Modal {
 	constructor(app: App) {
 		super(app);
 	}
 
 	onOpen() {
 		const {contentEl} = this;
-		contentEl.setText('Woah!');
+		contentEl.innerHTML = `
+
+		`;
+		// contentEl.setText('Woah!');
 	}
 
 	onClose() {
@@ -120,17 +143,27 @@ class SampleSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', {text: 'Settings for my awesome plugin.'});
-
+		containerEl.createEl('h2', {text: 'Settings for my Notion Sync.'});
 		new Setting(containerEl)
-			.setName('Setting #1')
-			.setDesc('It\'s a secret')
+			.setName('Notion Token')
+			.setDesc('Can be obtained via https://www.notion.so/my-integrations (Secrets/Internal Integration Token)')
 			.addText(text => text
-				.setPlaceholder('Enter your secret')
-				.setValue(this.plugin.settings.mySetting)
+				.setPlaceholder('Enter the API Token')
+				.setValue(this.plugin.settings.notionToken)
 				.onChange(async (value) => {
 					console.log('Secret: ' + value);
-					this.plugin.settings.mySetting = value;
+					this.plugin.settings.notionToken = value;
+					await this.plugin.saveSettings();
+				}));
+		new Setting(containerEl)
+			.setName('Notion Database Link')
+			.setDesc('The Database of notion that should be loaded')
+			.addText(text => text
+				.setPlaceholder('Enter the Link (https://www.notion.so/djdiox/a498e39378724d81ab6c045eb55c2a7d?v=97b06be2c3bb44f1aaefd549e3f244a7)')
+				.setValue(this.plugin.settings.database.link)
+				.onChange(async (value) => {
+					console.log('Secret: ' + value);
+					this.plugin.settings.database.link = value;
 					await this.plugin.saveSettings();
 				}));
 	}
