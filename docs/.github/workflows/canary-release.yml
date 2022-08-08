@@ -1,0 +1,45 @@
+name: Canary Release
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - packages/**
+
+permissions:
+  contents: read
+
+jobs:
+  publish-canary:
+    name: Publish Canary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@2541b1294d2704b0964813337f33b291d3f8596b # v3
+        with:
+          fetch-depth: 0 # Needed to get the commit number with "git rev-list --count HEAD"
+      - name: Set up Node
+        uses: actions/setup-node@5b949b50c3461bbcd5a540b150c368278160234a # v3
+        with:
+          node-version: '16'
+          cache: yarn
+      - name: Prepare git
+        run: |
+          git config --global user.name "Docusaurus Canary"
+          git config --global user.email "canary@docusaurus.io"
+          git fetch
+          git checkout main
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
+          cat .npmrc
+          echo "npm whoami"
+          npm whoami
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}
+      - name: Installation
+        run: yarn
+      - name: Publish Canary release
+        run: |
+          yarn canary
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_AUTH_TOKEN }}

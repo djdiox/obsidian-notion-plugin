@@ -1,0 +1,7 @@
+{
+  "plugins": [
+    "obsidian",
+    // or if you build your code and store it in a folder
+    ["obsidian", { "dir": "./path/to/dist/dir" }]
+  ]
+}

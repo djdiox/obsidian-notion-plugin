@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules'
-import babel from 'esbuild-plugin-babel';
+// import babel from 'esbuild-plugin-babel';
 
 const banner =
 `/*
@@ -17,7 +17,7 @@ esbuild.build({
 		js: banner,
 	},
 	entryPoints: ['main.ts'],
-    plugins: [babel()],
+    // plugins: [babel()],
 	bundle: true,
 	external: [
 		'obsidian',

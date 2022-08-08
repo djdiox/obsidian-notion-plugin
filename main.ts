@@ -14,7 +14,6 @@ import { config } from 'dotenv'
 
 config()
 // Remember to rename these classes and interfaces!
-
 interface NotionDatabase {
   id: string
   link: string
@@ -36,10 +35,8 @@ export default class MyPlugin extends Plugin {
   settings: MyPluginSettings
   client: Client
   async onload() {
-    await this.loadSettings()
-    this.client = new Client({
-		auth: process.env.NOTION_API_TOKEN
-	})
+	console.log("Reached onLoad, current this", this);
+    await this.loadSettings(this);
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon(
       'dice',
@@ -123,8 +120,18 @@ export default class MyPlugin extends Plugin {
     console.log('unloading plugin')
   }
 
-  async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData())
+  async loadSettings(self: Plugin) {
+	if(!process.env.NOTION_API_TOKEN) {
+		this.client = new Client({
+			auth: process.env.NOTION_API_TOKEN
+		});
+	}else{
+		throw new Error('Notion API Token has not been loaded yet, please stanbdy:')
+	}
+	const currentOptions = await this.loadData();
+	console.log('Applying Settings', currentOptions);
+    this.settings = Object.assign({}, DEFAULT_SETTINGS,  currentOptions)
+	console.log('Complete settiings', this.settings);
   }
 
   async saveSettings() {
@@ -139,8 +146,8 @@ class NotionDatabases extends Modal {
 
   onOpen() {
     const { contentEl } = this
+	self.notion.database.query()
     contentEl.innerHTML = `
-
 		`
     // contentEl.setText('Woah!');
   }
