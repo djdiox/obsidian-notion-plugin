@@ -1,6 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules'
+import notion from '@notionhq/client'
 // import babel from 'esbuild-plugin-babel';
 
 const banner =

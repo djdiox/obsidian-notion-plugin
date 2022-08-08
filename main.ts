@@ -9,7 +9,8 @@ import {
   PluginSettingTab,
   Setting,
 } from 'obsidian'
-import { Client } from '@notionhq/client'
+// import { Client } from '@notionhq/client'
+
 import { config } from 'dotenv'
 
 config()
@@ -35,8 +36,8 @@ export default class MyPlugin extends Plugin {
   settings: MyPluginSettings
   client: Client
   async onload() {
-	console.log("Reached onLoad, current this", this);
-    await this.loadSettings(this);
+    console.log('Reached onLoad, current this', this)
+    await this.loadSettings(this)
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon(
       'dice',
@@ -56,10 +57,17 @@ export default class MyPlugin extends Plugin {
     )
     // This adds a simple command that can be triggered anywhere
     this.addCommand({
+      id: 'load-database',
+      name: 'Load Notion Database',
+      callback: () => {
+        new NotionDatabases(this.app, this.client, this.settings).open()
+      },
+    })
+    this.addCommand({
       id: 'open-sample-modal-simple',
       name: 'Open sample modal (simple)',
       callback: () => {
-        new NotionDatabases(this.app).open()
+        new NotionDatabases(this.app, this.client, this.settings).open()
       },
     })
     // This adds a simple command that can be triggered anywhere
@@ -67,7 +75,7 @@ export default class MyPlugin extends Plugin {
       id: 'open-sample-modal-simple',
       name: 'Open sample modal (simple)',
       callback: () => {
-        new NotionDatabases(this.app).open()
+        new NotionDatabases(this.app, this.client, this.settings).open()
       },
     })
     // This adds an editor command that can perform some operation on the current editor instance
@@ -92,7 +100,7 @@ export default class MyPlugin extends Plugin {
           // If checking is true, we're simply "checking" if the command can be run.
           // If checking is false, then we want to actually perform the operation.
           if (!checking) {
-            new NotionDatabases(this.app).open()
+            new NotionDatabases(this.app, this.client, this.settings).open()
           }
 
           // This command will only show up in Command Palette when the check function returns true
@@ -120,18 +128,26 @@ export default class MyPlugin extends Plugin {
     console.log('unloading plugin')
   }
 
-  async loadSettings(self: Plugin) {
-	if(!process.env.NOTION_API_TOKEN) {
-		this.client = new Client({
-			auth: process.env.NOTION_API_TOKEN
-		});
-	}else{
-		throw new Error('Notion API Token has not been loaded yet, please stanbdy:')
-	}
-	const currentOptions = await this.loadData();
-	console.log('Applying Settings', currentOptions);
-    this.settings = Object.assign({}, DEFAULT_SETTINGS,  currentOptions)
-	console.log('Complete settiings', this.settings);
+  async loadSettings(self: MyPlugin) {
+    let token = ''
+    if (self.settings.notionToken) {
+      token = self.settings.notionToken
+	  new Notice('Loading Notion API Token from plugin: ' + self.settings.notionToken)
+    } else if (process.env.NOTION_API_TOKEN) {
+      token = process.env.NOTION_API_TOKEN
+	  new Notice('Loading Notion API Token from environment: ' + process.env.NOTION_API_TOKEN)
+    } else {
+      throw new Error(
+        'Notion API Token has not been loaded yet, please load token',
+      )
+    }
+    this.client = new Client({
+      auth: token,
+    })
+    const currentOptions = await this.loadData()
+    console.log('Applying Settings', currentOptions)
+    self.settings = Object.assign({}, DEFAULT_SETTINGS, currentOptions)
+    console.log('Complete settiings', self.settings)
   }
 
   async saveSettings() {
@@ -140,13 +156,18 @@ export default class MyPlugin extends Plugin {
 }
 
 class NotionDatabases extends Modal {
-  constructor(app: App) {
+  client: Client
+  id: string
+  settings: MyPluginSettings
+  constructor(app: App, client: Client, settings: MyPluginSettings) {
     super(app)
+    this.client = client
+    this.settings = settings
   }
 
   onOpen() {
     const { contentEl } = this
-	self.notion.database.query()
+    this.client.databases.query({ database_id: this.settings.database.id })
     contentEl.innerHTML = `
 		`
     // contentEl.setText('Woah!');
