@@ -1,4 +1,4 @@
-import '@babel/polyfill'
+// import '@babel/polyfill'
 import {
   App,
   Editor,
@@ -9,8 +9,8 @@ import {
   PluginSettingTab,
   Setting,
 } from 'obsidian'
-import { Client } from '@notionhq/client'
 import { config } from 'dotenv'
+import {Client} from '@notionhq/client'
 
 config()
 // Remember to rename these classes and interfaces!
@@ -38,14 +38,16 @@ export default class MyPlugin extends Plugin {
   async onload() {
     await this.loadSettings()
     this.client = new Client({
-		auth: process.env.NOTION_API_TOKEN
+		auth: DEFAULT_SETTINGS.notionToken
 	})
+	const self = this;
     // This creates an icon in the left ribbon.
     const ribbonIconEl = this.addRibbonIcon(
       'dice',
       'Notion Integration Plugin',
       (evt: MouseEvent) => {
         // Called when the user clicks the icon.
+		const db = new NotionDatabases(self.app, self.client)
         new Notice('Loading Database via: ' + DEFAULT_SETTINGS.database.link)
       },
     )
@@ -57,20 +59,13 @@ export default class MyPlugin extends Plugin {
     statusBarItemEl.setText(
       'Loading Databases ID: ' + DEFAULT_SETTINGS.database.id,
     )
+
     // This adds a simple command that can be triggered anywhere
     this.addCommand({
-      id: 'open-sample-modal-simple',
-      name: 'Open sample modal (simple)',
+      id: 'open-database',
+      name: 'Open Notion Database',
       callback: () => {
-        new NotionDatabases(this.app).open()
-      },
-    })
-    // This adds a simple command that can be triggered anywhere
-    this.addCommand({
-      id: 'open-sample-modal-simple',
-      name: 'Open sample modal (simple)',
-      callback: () => {
-        new NotionDatabases(this.app).open()
+        new NotionDatabases(this.app, this.client)
       },
     })
     // This adds an editor command that can perform some operation on the current editor instance
@@ -95,7 +90,7 @@ export default class MyPlugin extends Plugin {
           // If checking is true, we're simply "checking" if the command can be run.
           // If checking is false, then we want to actually perform the operation.
           if (!checking) {
-            new NotionDatabases(this.app).open()
+            new NotionDatabases(this.app, this.client)
           }
 
           // This command will only show up in Command Palette when the check function returns true
@@ -111,6 +106,7 @@ export default class MyPlugin extends Plugin {
     // Using this function will automatically remove the event listener when this plugin is disabled.
     this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
       console.log('click', evt)
+	  new NotionDatabases(this.app, this.client)
     })
 
     // When registering intervals, this function will automatically clear the interval when the plugin is disabled.
@@ -133,15 +129,25 @@ export default class MyPlugin extends Plugin {
 }
 
 class NotionDatabases extends Modal {
-  constructor(app: App) {
-    super(app)
+  client: Client;
+  constructor(app: App, client: Client) {
+    super(app);
+	this.client = client;
+	this.load()
+  }
+  async load() {
+    const { contentEl } = this
+	const result = await this.client.databases.retrieve({database_id: DEFAULT_SETTINGS.database.id})
+	console.log('Loaded a Page', result)
+    contentEl.innerHTML = JSON.stringify(result)
   }
 
-  onOpen() {
+  async onOpen() {
+	
+	const db = await this.client.databases.retrieve({database_id: DEFAULT_SETTINGS.database.id})
+	
     const { contentEl } = this
-    contentEl.innerHTML = `
-
-		`
+    contentEl.innerHTML = JSON.stringify(db)
     // contentEl.setText('Woah!');
   }
 
@@ -170,11 +176,11 @@ class SampleSettingTab extends PluginSettingTab {
       .setDesc(
         'Can be obtained via https://www.notion.so/my-integrations (Secrets/Internal Integration Token)',
       )
-      .addText((text) =>
+      .addText((text: any) =>
         text
           .setPlaceholder('Enter the API Token')
           .setValue(this.plugin.settings.notionToken)
-          .onChange(async (value) => {
+          .onChange(async (value: any) => {
             console.log('Secret: ' + value)
             this.plugin.settings.notionToken = value
             await this.plugin.saveSettings()
