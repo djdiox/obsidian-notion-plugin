@@ -3,6 +3,7 @@ import process from "process";
 import builtins from 'builtin-modules'
 import 'dotenv/config'
 import fs from 'fs';
+import path from "path";
 console.log(process.env.OUTPUT_FILE)
 const banner =
 `/*
@@ -44,5 +45,8 @@ esbuild.build({
 })
 .catch(() => process.exit(1))
 .finally(() => {
-	fs.copyFileSync('./manifest.json', outputDir +'manifest.json')
+	
+	const buildTarget = path.dirname(process.env.OUTPUT_FILE) +'manifest.json';
+	console.log(`Copying manifest to: ` + buildTarget)
+	fs.copyFileSync('./manifest.json',  buildTarget)
 });
