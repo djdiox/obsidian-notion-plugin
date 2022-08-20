@@ -12,7 +12,7 @@ import {
 import { config } from 'dotenv'
 import { Client } from '@notionhq/client'
 
-config()
+config({path: '.env'})
 // Remember to rename these classes and interfaces!
 
 interface NotionDatabase {
@@ -94,7 +94,7 @@ export default class MyPlugin extends Plugin {
 				const markdownView = this.app.workspace.getActiveViewOfType(
 					MarkdownView,
 				)
-				new Notice('Checking view, val ' + checking + ', current val: ', markdownView?.getDisplayText())
+				new Notice('Checking view, val ' + checking + ', current val: ' + markdownView?.getDisplayText())
 				if (markdownView) {
 					// If checking is true, we're simply "checking" if the command can be run.
 					// If checking is false, then we want to actually perform the operation.
@@ -148,7 +148,7 @@ class NotionDatabases extends Modal {
 	}
 	async load() {
 		const { contentEl } = this
-		contentEl.getText()
+		// contentEl.getText()
 		const result = await this.client.databases.retrieve({ database_id: this.settings.database.id })
 		console.log('Loaded a db', result)
 		contentEl.innerHTML = JSON.stringify(result)

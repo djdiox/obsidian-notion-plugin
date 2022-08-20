@@ -1,9 +1,10 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from 'builtin-modules'
-import 'dotenv/config'
+import { config } from 'dotenv'
 import fs from 'fs';
 import path from "path";
+config({path: '.env'})
 console.log(process.env.OUTPUT_FILE)
 const banner =
 `/*
@@ -23,6 +24,7 @@ esbuild.build({
 	external: [
 		'obsidian',
 		'electron',
+		'dotenv',
 		'@codemirror/autocomplete',
 		'@codemirror/collab',
 		'@codemirror/commands',
@@ -45,8 +47,7 @@ esbuild.build({
 })
 .catch(() => process.exit(1))
 .finally(() => {
-	
-	const buildTarget = path.dirname(process.env.OUTPUT_FILE) +'manifest.json';
+	const buildTarget = path.dirname(process.env.OUTPUT_FILE) +'/manifest.json';
 	console.log(`Copying manifest to: ` + buildTarget)
 	fs.copyFileSync('./manifest.json',  buildTarget)
 });
