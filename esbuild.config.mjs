@@ -14,7 +14,9 @@ if you want to view the source, please visit the github repository of this plugi
 `;
 
 const prod = (process.argv[2] === 'production');
-
+if(!fs.existsSync(process.env.OUTPUT_FOLDER)) {
+	fs.mkdirSync(process.env.OUTPUT_FOLDER);
+}
 esbuild.build({
 	banner: {
 		js: banner,
@@ -43,11 +45,11 @@ esbuild.build({
 	logLevel: "info",
 	sourcemap: prod ? false : 'inline',
 	treeShaking: true,
-	outfile: process.env.OUTPUT_FILE || 'main.js',
+	outfile: path.join(process.env.OUTPUT_FOLDER, 'main.js') || 'main.js',
 })
 .catch(() => process.exit(1))
 .finally(() => {
-	const buildTarget = path.dirname(process.env.OUTPUT_FILE) +'/manifest.json';
+	const buildTarget = path.join(process.env.OUTPUT_FOLDER, 'manifest.json');
 	console.log(`Copying manifest to: ` + buildTarget)
 	fs.copyFileSync('./manifest.json',  buildTarget)
 });
